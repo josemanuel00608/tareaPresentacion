@@ -1,0 +1,53 @@
+.category-page {
+  width: 100%;
+}
+
+.category-header {
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+  color: var(--white);
+  padding: 80px 0;
+  text-align: center;
+}
+
+.category-header h1 {
+  font-size: 3rem;
+  margin-bottom: 16px;
+}
+
+.category-header p {
+  font-size: 1.25rem;
+  opacity: 0.95;
+  max-width: 700px;
+  margin: 0 auto 24px;
+  line-height: 1.65;
+}
+
+.category-stats {
+  font-size: 1.1rem;
+  opacity: 0.9;
+}
+
+.category-content {
+  padding: 60px 0;
+}
+
+.no-courses {
+  text-align: center;
+  padding: 80px 0;
+  color: var(--text-light);
+  font-size: 1.1rem;
+}
+
+@media (max-width: 768px) {
+  .category-header {
+    padding: 60px 0;
+  }
+
+  .category-header h1 {
+    font-size: 2rem;
+  }
+
+  .category-header p {
+    font-size: 1.1rem;
+  }
+}
