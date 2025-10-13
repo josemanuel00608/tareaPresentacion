@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
+import { useAuth } from '../contexts/AuthContext';
+import PaymentModal from '../components/PaymentModal';
 import './CoursePage.css';
 
 function CoursePage() {
@@ -8,6 +10,16 @@ function CoursePage() {
   const [course, setCourse] = useState(null);
   const [lessons, setLessons] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const { user } = useAuth();
+
+  const handleEnrollClick = () => {
+    if (!user) {
+      alert('Por favor, inicia sesión para comprar este curso.');
+      return;
+    }
+    setShowPaymentModal(true);
+  };
 
   useEffect(() => {
     fetchCourse();
@@ -153,7 +165,7 @@ function CoursePage() {
                 <div className="price-tag">
                   <span className="price">${course.price.toLocaleString()}</span>
                 </div>
-                <button className="btn-enroll">Inscribirse Ahora</button>
+                <button className="btn-enroll" onClick={handleEnrollClick}>Inscribirse Ahora</button>
                 <button className="btn-demo">Vista Previa</button>
                 <div className="course-includes">
                   <h4>Este curso incluye:</h4>
@@ -185,6 +197,13 @@ function CoursePage() {
           </div>
         </div>
       </div>
+      {course && (
+        <PaymentModal
+          isOpen={showPaymentModal}
+          onClose={() => setShowPaymentModal(false)}
+          course={course}
+        />
+      )}
     </div>
   );
 }

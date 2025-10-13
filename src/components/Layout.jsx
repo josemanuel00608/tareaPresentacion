@@ -1,7 +1,22 @@
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
+import AuthModal from './AuthModal';
+import ChatBot from './ChatBot';
 import './Layout.css';
 
 function Layout({ children }) {
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const { user, signOut } = useAuth();
+
+  const handleAuthClick = () => {
+    if (user) {
+      signOut();
+    } else {
+      setShowAuthModal(true);
+    }
+  };
+
   return (
     <div className="layout">
       <header className="header">
@@ -16,7 +31,9 @@ function Layout({ children }) {
               <Link to="/category/programacion" className="nav-link">Programación</Link>
               <Link to="/category/diseno" className="nav-link">Diseño</Link>
               <Link to="/category/negocios" className="nav-link">Negocios</Link>
-              <button className="btn-primary">Empezar Ahora</button>
+              <button className="btn-primary" onClick={handleAuthClick}>
+                {user ? 'Cerrar Sesión' : 'Iniciar Sesión'}
+              </button>
             </div>
           </nav>
         </div>
@@ -43,19 +60,18 @@ function Layout({ children }) {
             <div className="footer-section">
               <h4>Soporte</h4>
               <ul>
-                <li><a href="#ayuda">Centro de Ayuda</a></li>
-                <li><a href="#contacto">Contacto</a></li>
-                <li><a href="#terminos">Términos de Uso</a></li>
-                <li><a href="#privacidad">Política de Privacidad</a></li>
+                <li><a href="https://wa.me/59176082372" target="_blank" rel="noopener noreferrer">WhatsApp: +591 76082372</a></li>
+                <li><a href="mailto:josemanuelloayzavaca7@gmail.com">Email: josemanuelloayzavaca7@gmail.com</a></li>
+                <li><a href="tel:+59176082372">Llamar: +591 76082372</a></li>
               </ul>
             </div>
             <div className="footer-section">
               <h4>Síguenos</h4>
               <ul>
-                <li><a href="#facebook">Facebook</a></li>
-                <li><a href="#twitter">Twitter</a></li>
-                <li><a href="#instagram">Instagram</a></li>
-                <li><a href="#linkedin">LinkedIn</a></li>
+                <li><a href="https://facebook.com" target="_blank" rel="noopener noreferrer">Facebook</a></li>
+                <li><a href="https://twitter.com" target="_blank" rel="noopener noreferrer">Twitter</a></li>
+                <li><a href="https://instagram.com" target="_blank" rel="noopener noreferrer">Instagram</a></li>
+                <li><a href="https://linkedin.com" target="_blank" rel="noopener noreferrer">LinkedIn</a></li>
               </ul>
             </div>
           </div>
@@ -64,6 +80,8 @@ function Layout({ children }) {
           </div>
         </div>
       </footer>
+      <AuthModal isOpen={showAuthModal} onClose={() => setShowAuthModal(false)} />
+      <ChatBot />
     </div>
   );
 }
