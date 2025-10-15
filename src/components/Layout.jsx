@@ -1,13 +1,32 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { supabase } from '../lib/supabase';
 import AuthModal from './AuthModal';
 import ChatBot from './ChatBot';
 import './Layout.css';
 
 function Layout({ children }) {
   const [showAuthModal, setShowAuthModal] = useState(false);
+  const [userRole, setUserRole] = useState(null);
   const { user, signOut } = useAuth();
+
+  useEffect(() => {
+    if (user) {
+      fetchUserRole();
+    } else {
+      setUserRole(null);
+    }
+  }, [user]);
+
+  async function fetchUserRole() {
+    const { data } = await supabase
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', user.id)
+      .maybeSingle();
+    if (data) setUserRole(data.role);
+  }
 
   const handleAuthClick = () => {
     if (user) {
@@ -31,6 +50,9 @@ function Layout({ children }) {
               <Link to="/category/programacion" className="nav-link">Programación</Link>
               <Link to="/category/diseno" className="nav-link">Diseño</Link>
               <Link to="/category/negocios" className="nav-link">Negocios</Link>
+              {user && <Link to="/dashboard" className="nav-link">Mi Dashboard</Link>}
+              {userRole === 'teacher' && <Link to="/teacher" className="nav-link">Panel Profesor</Link>}
+              {userRole === 'admin' && <Link to="/admin" className="nav-link">Panel Admin</Link>}
               <button className="btn-primary" onClick={handleAuthClick}>
                 {user ? 'Cerrar Sesión' : 'Iniciar Sesión'}
               </button>
@@ -68,10 +90,10 @@ function Layout({ children }) {
             <div className="footer-section">
               <h4>Síguenos</h4>
               <ul>
-                <li><a href="https://facebook.com" target="_blank" rel="noopener noreferrer">Facebook</a></li>
-                <li><a href="https://twitter.com" target="_blank" rel="noopener noreferrer">Twitter</a></li>
-                <li><a href="https://instagram.com" target="_blank" rel="noopener noreferrer">Instagram</a></li>
-                <li><a href="https://linkedin.com" target="_blank" rel="noopener noreferrer">LinkedIn</a></li>
+                <li><a href="https://facebook.com/academiaonline" target="_blank" rel="noopener noreferrer">Facebook</a></li>
+                <li><a href="https://twitter.com/academiaonline" target="_blank" rel="noopener noreferrer">Twitter</a></li>
+                <li><a href="https://www.instagram.com/brakend0?igsh=MXZmZHVycGhmejNlYw==" target="_blank" rel="noopener noreferrer">Instagram</a></li>
+                <li><a href="https://linkedin.com/company/academiaonline" target="_blank" rel="noopener noreferrer">LinkedIn</a></li>
               </ul>
             </div>
           </div>

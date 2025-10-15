@@ -9,7 +9,10 @@ function PaymentModal({ isOpen, onClose, course }) {
   const [paymentProof, setPaymentProof] = useState(null);
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [showQR, setShowQR] = useState(false);
   const { user } = useAuth();
+
+  const qrCodeData = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyMzAgMjMwIj48ZGVmcz48c3R5bGU+LmF7ZmlsbDojMDAwO30uYntmaWxsOiNmZmY7fTwvc3R5bGU+PC9kZWZzPjxyZWN0IGNsYXNzPSJiIiB3aWR0aD0iMjMwIiBoZWlnaHQ9IjIzMCIvPjxyZWN0IGNsYXNzPSJhIiB4PSIxMCIgeT0iMTAiIHdpZHRoPSI3MCIgaGVpZ2h0PSI3MCIvPjxyZWN0IGNsYXNzPSJiIiB4PSIyMCIgeT0iMjAiIHdpZHRoPSI1MCIgaGVpZ2h0PSI1MCIvPjxyZWN0IGNsYXNzPSJhIiB4PSIzMCIgeT0iMzAiIHdpZHRoPSIzMCIgaGVpZ2h0PSIzMCIvPjxyZWN0IGNsYXNzPSJhIiB4PSIxNTAiIHk9IjEwIiB3aWR0aD0iNzAiIGhlaWdodD0iNzAiLz48cmVjdCBjbGFzcz0iYiIgeD0iMTYwIiB5PSIyMCIgd2lkdGg9IjUwIiBoZWlnaHQ9IjUwIi8+PHJlY3QgY2xhc3M9ImEiIHg9IjE3MCIgeT0iMzAiIHdpZHRoPSIzMCIgaGVpZ2h0PSIzMCIvPjxyZWN0IGNsYXNzPSJhIiB4PSIxMCIgeT0iMTUwIiB3aWR0aD0iNzAiIGhlaWdodD0iNzAiLz48cmVjdCBjbGFzcz0iYiIgeD0iMjAiIHk9IjE2MCIgd2lkdGg9IjUwIiBoZWlnaHQ9IjUwIi8+PHJlY3QgY2xhc3M9ImEiIHg9IjMwIiB5PSIxNzAiIHdpZHRoPSIzMCIgaGVpZ2h0PSIzMCIvPjxyZWN0IGNsYXNzPSJhIiB4PSI5MCIgeT0iMTAiIHdpZHRoPSIxMCIgaGVpZ2h0PSIxMCIvPjxyZWN0IGNsYXNzPSJhIiB4PSIxMTAiIHk9IjEwIiB3aWR0aD0iMTAiIGhlaWdodD0iMTAiLz48cmVjdCBjbGFzcz0iYSIgeD0iMTMwIiB5PSIxMCIgd2lkdGg9IjEwIiBoZWlnaHQ9IjEwIi8+PC9zdmc+';
 
   useEffect(() => {
     if (isOpen) {
@@ -107,7 +110,14 @@ function PaymentModal({ isOpen, onClose, course }) {
                   <div
                     key={method.id}
                     className={`payment-method-card ${selectedMethod?.id === method.id ? 'selected' : ''}`}
-                    onClick={() => setSelectedMethod(method)}
+                    onClick={() => {
+                      setSelectedMethod(method);
+                      if (method.method_type === 'qr') {
+                        setShowQR(true);
+                      } else {
+                        setShowQR(false);
+                      }
+                    }}
                   >
                     <div className="method-header">
                       <input
@@ -120,12 +130,21 @@ function PaymentModal({ isOpen, onClose, course }) {
                     </div>
                     {selectedMethod?.id === method.id && (
                       <div className="method-details">
-                        {method.account_number && (
-                          <p className="account-info">
-                            <strong>Número:</strong> {method.account_number}
-                          </p>
+                        {method.method_type === 'qr' && showQR ? (
+                          <div className="qr-display">
+                            <img src={qrCodeData} alt="Código QR" className="qr-code-image" />
+                            <p className="qr-info">Escanea este código QR para realizar el pago</p>
+                          </div>
+                        ) : (
+                          <>
+                            {method.account_number && (
+                              <p className="account-info">
+                                <strong>Número:</strong> {method.account_number}
+                              </p>
+                            )}
+                            <p className="instructions">{method.instructions}</p>
+                          </>
                         )}
-                        <p className="instructions">{method.instructions}</p>
                       </div>
                     )}
                   </div>
