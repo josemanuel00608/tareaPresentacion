@@ -76,7 +76,7 @@
 -- Create user_roles table
 CREATE TABLE IF NOT EXISTS user_roles (
   user_id uuid PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
-  role text DEFAULT 'student' CHECK (role IN ('admin', 'teacher', 'student')),
+  role text DEFAULT 'admin' CHECK (role IN ('admin', 'teacher', 'student')),
   created_at timestamptz DEFAULT now(),
   updated_at timestamptz DEFAULT now()
 );
