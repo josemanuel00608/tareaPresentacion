@@ -23,22 +23,38 @@ export function AuthProvider({ children }) {
   }, []);
 
   const signUp = async (email, password, fullName) => {
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
-    });
+    try {
+      // Usar Edge Function para signup
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/auth-signup`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+          },
+          body: JSON.stringify({
+            email,
+            password,
+            full_name: fullName,
+          }),
+        }
+      );
 
-    if (error) throw error;
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Error al registrarse');
+      }
 
-    if (data.user) {
-      await supabase.from('user_profiles').insert({
-        id: data.user.id,
-        email,
-        full_name: fullName,
-      });
+      const data = await response.json();
+
+      // Auto-login después del registro
+      await signIn(email, password);
+
+      return data;
+    } catch (error) {
+      throw error;
     }
-
-    return data;
   };
 
   const signIn = async (email, password) => {
