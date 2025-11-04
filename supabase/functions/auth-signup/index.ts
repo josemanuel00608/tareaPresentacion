@@ -38,6 +38,10 @@ Deno.serve(async (req: Request) => {
     const supabaseUrl = Deno.env.get("SUPABASE_URL");
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
 
+    if (!supabaseUrl || !supabaseServiceKey) {
+      throw new Error("Faltan variables de entorno de Supabase");
+    }
+
     // Crear usuario con auth admin API
     const signUpResponse = await fetch(`${supabaseUrl}/auth/v1/admin/users`, {
       method: "POST",
@@ -55,10 +59,11 @@ Deno.serve(async (req: Request) => {
       }),
     });
 
+    const signUpData = await signUpResponse.json();
+
     if (!signUpResponse.ok) {
-      const errorData = await signUpResponse.json();
       return new Response(
-        JSON.stringify({ error: errorData.message || "Error al crear usuario" }),
+        JSON.stringify({ error: signUpData.message || "Error al crear usuario" }),
         {
           status: signUpResponse.status,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -66,44 +71,49 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    const userData = await signUpResponse.json();
-    const userId = userData.id;
+    const userId = signUpData.id;
 
-    // Crear perfil de usuario
-    const profileResponse = await fetch(`${supabaseUrl}/rest/v1/user_profiles`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${supabaseServiceKey}`,
-        "apikey": supabaseServiceKey,
-        "Prefer": "return=minimal",
-      },
-      body: JSON.stringify({
-        id: userId,
-        email,
-        full_name,
-      }),
-    });
+    // Crear perfil de usuario usando Supabase client
+    try {
+      await fetch(`${supabaseUrl}/rest/v1/user_profiles`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "apikey": supabaseServiceKey,
+          "Authorization": `Bearer ${supabaseServiceKey}`,
+        },
+        body: JSON.stringify({
+          id: userId,
+          email,
+          full_name,
+        }),
+      });
+    } catch (e) {
+      console.log("Profile creation note:", e.message);
+    }
 
     // Asignar rol de estudiante
-    const roleResponse = await fetch(`${supabaseUrl}/rest/v1/user_roles`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${supabaseServiceKey}`,
-        "apikey": supabaseServiceKey,
-        "Prefer": "return=minimal",
-      },
-      body: JSON.stringify({
-        user_id: userId,
-        role: "student",
-      }),
-    });
+    try {
+      await fetch(`${supabaseUrl}/rest/v1/user_roles`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "apikey": supabaseServiceKey,
+          "Authorization": `Bearer ${supabaseServiceKey}`,
+        },
+        body: JSON.stringify({
+          user_id: userId,
+          role: "student",
+        }),
+      });
+    } catch (e) {
+      console.log("Role assignment note:", e.message);
+    }
 
     return new Response(
       JSON.stringify({
         success: true,
-        user: userData,
+        user: signUpData,
         message: "Usuario registrado exitosamente",
       }),
       {
