@@ -1,4 +1,5 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
+import { createClient } from "npm:@supabase/supabase-js@2.39.7";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -23,114 +24,80 @@ Deno.serve(async (req: Request) => {
   try {
     const { email, password, full_name }: SignUpRequest = await req.json();
 
-    // Validar datos
     if (!email || !password || !full_name) {
       return new Response(
         JSON.stringify({ error: "Faltan datos requeridos" }),
-        {
-          status: 400,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        }
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    // Usar la URL de Supabase desde las variables de entorno
     const supabaseUrl = Deno.env.get("SUPABASE_URL");
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
 
     if (!supabaseUrl || !supabaseServiceKey) {
-      throw new Error("Faltan variables de entorno de Supabase");
+      throw new Error("Variables de entorno no configuradas");
     }
 
-    // Crear usuario con auth admin API
-    const signUpResponse = await fetch(`${supabaseUrl}/auth/v1/admin/users`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${supabaseServiceKey}`,
-      },
-      body: JSON.stringify({
-        email,
-        password,
-        email_confirm: true,
-        user_metadata: {
-          full_name,
-        },
-      }),
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+    // Registrar usuario
+    const { data: signUpData, error: signUpError } = await supabase.auth.admin.createUser({
+      email,
+      password,
+      email_confirm: true,
+      user_metadata: { full_name },
     });
 
-    const signUpData = await signUpResponse.json();
-
-    if (!signUpResponse.ok) {
-      return new Response(
-        JSON.stringify({ error: signUpData.message || "Error al crear usuario" }),
-        {
-          status: signUpResponse.status,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        }
-      );
+    if (signUpError) {
+      throw new Error(signUpError.message);
     }
 
-    const userId = signUpData.id;
-
-    // Crear perfil de usuario usando Supabase client
-    try {
-      await fetch(`${supabaseUrl}/rest/v1/user_profiles`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "apikey": supabaseServiceKey,
-          "Authorization": `Bearer ${supabaseServiceKey}`,
-        },
-        body: JSON.stringify({
-          id: userId,
-          email,
-          full_name,
-        }),
-      });
-    } catch (e) {
-      console.log("Profile creation note:", e.message);
+    if (!signUpData.user) {
+      throw new Error("No se pudo crear el usuario");
     }
 
-    // Asignar rol de estudiante
+    const userId = signUpData.user.id;
+
+    // Crear perfil
     try {
-      await fetch(`${supabaseUrl}/rest/v1/user_roles`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "apikey": supabaseServiceKey,
-          "Authorization": `Bearer ${supabaseServiceKey}`,
-        },
-        body: JSON.stringify({
-          user_id: userId,
-          role: "student",
-        }),
-      });
+      const { error: profileError } = await supabase
+        .from("user_profiles")
+        .insert({ id: userId, email, full_name });
+
+      if (profileError && profileError.code !== "PGRST116") {
+        console.warn("Error en perfil:", profileError);
+      }
     } catch (e) {
-      console.log("Role assignment note:", e.message);
+      console.warn("Excepción en perfil:", e);
+    }
+
+    // Asignar rol
+    try {
+      const { error: roleError } = await supabase
+        .from("user_roles")
+        .insert({ user_id: userId, role: "student" });
+
+      if (roleError && roleError.code !== "PGRST116") {
+        console.warn("Error en rol:", roleError);
+      }
+    } catch (e) {
+      console.warn("Excepción en rol:", e);
     }
 
     return new Response(
       JSON.stringify({
         success: true,
-        user: signUpData,
+        user: signUpData.user,
         message: "Usuario registrado exitosamente",
       }),
-      {
-        status: 200,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      }
+      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
-  } catch (error) {
-    console.error("Error:", error);
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : "Error desconocido";
+    console.error("Error:", errorMessage);
     return new Response(
-      JSON.stringify({
-        error: error.message || "Error interno del servidor",
-      }),
-      {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      }
+      JSON.stringify({ error: errorMessage }),
+      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
 });

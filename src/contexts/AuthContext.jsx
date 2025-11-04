@@ -24,7 +24,7 @@ export function AuthProvider({ children }) {
 
   const signUp = async (email, password, fullName) => {
     try {
-      // Usar Edge Function para signup
+      // Usar Edge Function para registrar usuario
       const response = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/auth-signup`,
         {
@@ -41,17 +41,17 @@ export function AuthProvider({ children }) {
         }
       );
 
+      const result = await response.json();
+
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Error al registrarse');
+        throw new Error(result.error || 'Error al registrarse');
       }
 
-      const data = await response.json();
-
-      // Auto-login después del registro
+      // Auto-login después del registro exitoso
+      await new Promise(resolve => setTimeout(resolve, 500));
       await signIn(email, password);
 
-      return data;
+      return result;
     } catch (error) {
       throw error;
     }
